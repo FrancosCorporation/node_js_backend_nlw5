@@ -1,2 +1,14 @@
 /node_modules
 node_modules
+
+# build
+dist/
+build/
+
+# logs
+*.log
+
+# sistema / IDE
+.DS_Store
+Thumbs.db
+.idea/
