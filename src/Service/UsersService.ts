@@ -1,35 +1,20 @@
-import { getCustomRepository, Repository } from "typeorm"
+import { Repository } from "typeorm";
+import { AppDataSource } from "../DataBase";
 import { User } from "../entities/User";
-import { UsersRepository } from "../Repositories/UsersRepository"
 
+export class UsersService {
+  private readonly repository: Repository<User>;
 
-class UsersService {
+  constructor() {
+    this.repository = AppDataSource.getRepository(User);
+  }
 
-    private usersRepository: Repository<User>;
+  async findById(userId: string): Promise<User | null> {
+    return this.repository.findOneBy({ id: userId });
+  }
 
-    constructor() {
-        this.usersRepository = getCustomRepository(UsersRepository);
-    }
-    async findByEmail(email: string) {
-        //Verificar se o usuario existe
-        const userExist = await this.usersRepository.findOne({
-            email
-        })
-        //Se existir , retornar user
-        if (userExist) {
-            return userExist;
-        }
-        else { null; }
-    }
-    async create(email: string) {
-        const user = this.usersRepository.create({
-            email
-        });
-
-        //Se não existir , salvar no DB
-        await this.usersRepository.save(user);
-
-        return user;
-    }
+  async create(email: string): Promise<User> {
+    const user = this.repository.create({ email: email.trim().toLowerCase() });
+    return this.repository.save(user);
+  }
 }
-export { UsersService }

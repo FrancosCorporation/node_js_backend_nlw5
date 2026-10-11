@@ -1,0 +1,22 @@
+services:
+  chat:
+    build:
+      context: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      HOST: 0.0.0.0
+      PORT: ${PORT:-3333}
+      DATABASE_PATH: /app/database/chat.sqlite
+    ports:
+      - "${PORT:-3333}:${PORT:-3333}"
+    volumes:
+      - ./database:/app/database
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL

@@ -1,48 +1,77 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="pt-BR">
   <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Roboto&display=swap"
-      rel="stylesheet"
-    />
-    <title>Chat Admin</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#30205c" />
+    <title>Atendimento · Central de suporte</title>
     <link rel="stylesheet" href="/css/styles.css" />
   </head>
+  <body class="admin_page">
+    <main class="admin_shell">
+      <section
+        id="admin_login"
+        class="login_card"
+        aria-labelledby="login_title"
+      >
+        <p class="eyebrow">Central de suporte</p>
+        <h1 id="login_title">Acesso do atendente</h1>
+        <p>
+          Entre com as credenciais administrativas configuradas neste servidor.
+        </p>
+        <form id="admin_login_form" class="login_form">
+          <label for="admin_username">Usuário</label>
+          <input
+            id="admin_username"
+            name="username"
+            autocomplete="username"
+            required
+          />
+          <label for="admin_password">Senha</label>
+          <input
+            id="admin_password"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            required
+          />
+          <button class="primary_button" type="submit">Entrar</button>
+        </form>
+        <p
+          id="login_status"
+          class="status"
+          role="status"
+          aria-live="polite"
+        ></p>
+      </section>
 
-  <body>
-    <div id="list_users"></div>
-
-    <script id="template" type="x-tmpl-mustache">
-      <div id="user{{id}}">
-          <span class="email">Email: {{email}}</span>
-          <button class="btn_atd" onclick="call('{{id}}')">Entrar em atendimento</button>
-      </div>
-    </script>
-
-    <div id="supports"></div>
-
-    <script id="admin_template" type="x-tmpl-mustache">
-      <div class="admin" id="admin">
-
-          <span class="in_support">Em atendimento - <strong> {{email}}</strong> </span>
-
-                  <span></span>
-                  <div class="admin_list_messages" id="allMessages{{id}}"></div>
-
-                 <div class="admin_send_message">
-                  <input type="text" id="send_message_{{id}}"/>
-                  <button id="send" class="btn_send" onclick="sendMessage('{{id}}')">Enviar</button>
-                 </div>
-      </div>
-    </script>
+      <section id="admin_workspace" class="workspace" hidden>
+        <header class="workspace_header">
+          <div>
+            <p class="eyebrow">Central de suporte</p>
+            <h1>Conversas</h1>
+          </div>
+          <button id="admin_logout" class="secondary_button" type="button">
+            Sair
+          </button>
+        </header>
+        <p id="page_status" class="status" role="status" aria-live="polite"></p>
+        <div class="conversation_layout">
+          <section class="inbox" aria-labelledby="inbox_title">
+            <h2 id="inbox_title">Caixa de entrada</h2>
+            <div id="list_users" class="user_list"></div>
+          </section>
+          <section
+            id="supports"
+            class="conversation_area"
+            aria-label="Atendimento selecionado"
+          >
+            <p class="empty_state">Selecione uma conversa para começar.</p>
+          </section>
+        </div>
+      </section>
+    </main>
+    <script src="/socket.io/socket.io.js" defer></script>
+    <script src="/js/admin.js" defer></script>
   </body>
-
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.10.4/dayjs.min.js"></script>
-  <script src="https://unpkg.com/mustache@latest"></script>
-  <script src="/js/admin.js"></script>
 </html>

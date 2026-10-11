@@ -1,22 +1,18 @@
-import {Entity, Column, CreateDateColumn, PrimaryColumn} from "typeorm";
-import {v4 as uuid} from "uuid";
+import { randomUUID } from "node:crypto";
+import { Column, CreateDateColumn, Entity, PrimaryColumn } from "typeorm";
 
 @Entity("users")
-class User{
+export class User {
+  @PrimaryColumn({ type: "uuid" })
+  id!: string;
 
-    @PrimaryColumn()
-    id:string;
+  @Column({ type: "varchar" })
+  email!: string;
 
-    @Column()
-    email:string;
+  @CreateDateColumn({ type: "datetime" })
+  created_at!: Date;
 
-    @CreateDateColumn()
-    created_at: Date;
-    
-    constructor(){
-        if(!this.id){
-            this.id= uuid();
-        }
-    }
+  constructor() {
+    this.id ??= randomUUID();
+  }
 }
-export {User}

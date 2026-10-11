@@ -1,6 +1,14 @@
 # MELHORIAS — node_js_backend_nlw5
 > **Gerado por análise de código em 2026-10-05** · Stack: Express + Socket.IO + TypeORM/SQLite (NLW5) · Branch: `main`
 
+## Estado da execução · 2026-10-11
+
+- [x] **SEC-01, SEC-02, SEC-03, SEC-04:** namespaces separados, sessão administrativa JWT, sessão de cliente assinada por navegador, validação de dados, rotas administrativas protegidas e renderização segura com `textContent`.
+- [x] **BUG-01, BUG-02, BUG-03:** configuração TypeORM com caminhos portáveis, banco de teste removido do Git e preservado localmente, identidade administrativa estável e interface corrigida.
+- [ ] **TEST-01:** testes automatizados não foram adicionados nem executados nesta tarefa; build, lint, auditoria de dependências e validações de configuração foram usados.
+- [ ] **DEVOPS-01:** workflow de CI valida `npm ci`, build e lint em `main`; falta o passo `npm test`, bloqueado junto com TEST-01.
+- [x] **DEVOPS-02, DOC-01:** imagem multi-stage não-root com `PORT` e healthcheck, Compose e instruções de configuração/segurança atualizadas.
+
 ## 0. Como usar este documento
 
 Cada item segue um contrato fixo de 6 campos:

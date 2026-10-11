@@ -1,34 +1,36 @@
-import { Entity, PrimaryColumn, CreateDateColumn, Column, ManyToMany, ManyToOne, JoinColumn } from "typeorm";
-import { v4 as uuid } from "uuid";
+import { randomUUID } from "node:crypto";
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryColumn,
+} from "typeorm";
 import { User } from "./User";
 
 @Entity("messages")
-class Message {
+export class Message {
+  @PrimaryColumn({ type: "uuid" })
+  id!: string;
 
-    @PrimaryColumn()
-    id: string;
+  @Column({ type: "uuid", nullable: true })
+  admin_id!: string | null;
 
-    @Column()
-    admin_id: string;
+  @Column({ type: "varchar" })
+  text!: string;
 
-    @Column()
-    text: string;
+  @JoinColumn({ name: "user_id" })
+  @ManyToOne(() => User)
+  user!: User;
 
-    @JoinColumn({name: "user_id"})
-    @ManyToOne(() => User)
-    user: User;
+  @Column({ type: "uuid" })
+  user_id!: string;
 
-    @Column()
-    user_id: string;
+  @CreateDateColumn({ type: "datetime" })
+  created_at!: Date;
 
-    @CreateDateColumn()
-    created_at: Date;
-    constructor() {
-        if (!this.id) {
-            this.id = uuid();
-        }
-    }
-
-
+  constructor() {
+    this.id ??= randomUUID();
+  }
 }
-export { Message };

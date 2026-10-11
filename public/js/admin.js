@@ -1,114 +1,272 @@
-const socket = io();
+const loginPanel = document.querySelector("#admin_login");
+const workspace = document.querySelector("#admin_workspace");
+const loginForm = document.querySelector("#admin_login_form");
+const loginStatus = document.querySelector("#login_status");
+const pageStatus = document.querySelector("#page_status");
+const listUsers = document.querySelector("#list_users");
+const supports = document.querySelector("#supports");
+
+let socket;
 let connectionsUsers = [];
+let activeUserId = null;
 
-socket.on("admin_list_all_users", (connections) => {
-  connectionsUsers = connections;
-  document.getElementById("list_users").innerHTML = "";
+function setStatus(element, message, isError = false) {
+  element.textContent = message;
+  element.classList.toggle("status_error", isError);
+}
 
-  let template = document.getElementById("template").innerHTML;
+function setAuthenticated(authenticated) {
+  loginPanel.hidden = authenticated;
+  workspace.hidden = !authenticated;
+}
 
-  connections.forEach((connection) => {
-    const rendered = Mustache.render(template, {
-      email: connection.user.email,
-      id: connection.socket_id,
-    });
+function formatDate(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "Data indisponível"
+    : new Intl.DateTimeFormat("pt-BR", {
+        dateStyle: "short",
+        timeStyle: "short",
+      }).format(date);
+}
 
-    document.getElementById("list_users").innerHTML += rendered;
+function appendMessage(container, { author, text, date, type }) {
+  const message = document.createElement("article");
+  message.className = type;
+
+  const authorLabel = document.createElement("span");
+  authorLabel.className = "message_author";
+  authorLabel.textContent = author;
+
+  const content = document.createElement("span");
+  content.className = "message_text";
+  content.textContent = text;
+
+  const timestamp = document.createElement("time");
+  timestamp.className = "admin_date";
+  const parsedDate = new Date(date);
+  if (!Number.isNaN(parsedDate.getTime()))
+    timestamp.dateTime = parsedDate.toISOString();
+  timestamp.textContent = formatDate(date);
+
+  message.append(authorLabel, content, timestamp);
+  container.append(message);
+  container.scrollTop = container.scrollHeight;
+}
+
+function renderConnections(connections) {
+  connectionsUsers = Array.isArray(connections) ? connections : [];
+  listUsers.replaceChildren();
+
+  if (connectionsUsers.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "empty_state";
+    empty.textContent = "Nenhuma conversa aguardando atendimento.";
+    listUsers.append(empty);
+    return;
+  }
+
+  connectionsUsers.forEach((connection) => {
+    const item = document.createElement("article");
+    item.className = "user_card";
+
+    const email = document.createElement("span");
+    email.className = "email";
+    email.textContent = connection.user?.email ?? "E-mail indisponível";
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn_atd";
+    button.dataset.userId = connection.user_id;
+    button.textContent = connection.admin_id
+      ? "Continuar atendimento"
+      : "Atender conversa";
+
+    item.append(email, button);
+    listUsers.append(item);
   });
-});
+}
 
-function call(id) {
-  const connection = connectionsUsers.find(
-    (connection) => connection.socket_id === id
-  );
+function openConversation(connection) {
+  activeUserId = connection.user_id;
+  supports.replaceChildren();
 
-  const template = document.getElementById("admin_template").innerHTML;
+  const panel = document.createElement("section");
+  panel.className = "support_panel";
+  panel.setAttribute("aria-labelledby", "active_conversation_title");
 
-  const rendered = Mustache.render(template, {
-    email: connection.user.email,
-    id: connection.user_id,
-  });
+  const title = document.createElement("h2");
+  title.id = "active_conversation_title";
+  title.textContent = `Atendimento de ${connection.user?.email ?? "cliente"}`;
 
-  document.getElementById("supports").innerHTML += rendered;
+  const messages = document.createElement("div");
+  messages.className = "admin_list_messages";
+  messages.id = `allMessages${connection.user_id}`;
+  messages.setAttribute("aria-live", "polite");
 
-  const params = {
-    user_id: connection.user_id,
-  };
+  const form = document.createElement("form");
+  form.className = "admin_send_message";
+  form.id = `send_form_${connection.user_id}`;
 
-  socket.emit("admin_user_in_support", params);
+  const input = document.createElement("input");
+  input.type = "text";
+  input.id = `send_message_${connection.user_id}`;
+  input.name = "message";
+  input.maxLength = 2000;
+  input.placeholder = "Escreva uma resposta";
+  input.setAttribute("aria-label", "Mensagem para o cliente");
+  input.required = true;
 
-  socket.emit("admin_list_messages_by_user", params, (messages) => {
-    const divMessages = document.getElementById(
-      `allMessages${connection.user_id}`
-    );
+  const send = document.createElement("button");
+  send.type = "submit";
+  send.className = "btn_send";
+  send.textContent = "Enviar";
 
-    messages.forEach((message) => {
-      const createDiv = document.createElement("div");
+  form.append(input, send);
+  panel.append(title, messages, form);
+  supports.append(panel);
+  setStatus(pageStatus, "Conversa aberta.");
 
-      if (message.admin_id === null) {
-        createDiv.className = "admin_message_client";
-
-        createDiv.innerHTML = `<span>${connection.user.email} </span>`;
-        createDiv.innerHTML += `<span>${message.text}</span>`;
-        createDiv.innerHTML += `<span class="admin_date">${dayjs(
-          message.created_at
-        ).format("DD/MM/YYYY HH:mm:ss")}</span>`;
-      } else {
-        createDiv.className = "admin_message_admin";
-
-        createDiv.innerHTML = `Atendente: <span>${message.text}</span>`;
-        createDiv.innerHTML += `<span class="admin_date>${dayjs(
-          message.created_at
-        ).format("DD/MM/YYYY HH:mm:ss")}`;
+  socket.emit(
+    "admin_user_in_support",
+    { user_id: connection.user_id },
+    (result) => {
+      if (result?.error) {
+        setStatus(pageStatus, result.error, true);
+        return;
       }
 
-      divMessages.appendChild(createDiv);
+      socket.emit(
+        "admin_list_messages_by_user",
+        { user_id: connection.user_id },
+        (history) => {
+          if (activeUserId !== connection.user_id) return;
+          messages.replaceChildren();
+          history.forEach((message) => {
+            const fromClient = message.admin_id === null;
+            appendMessage(messages, {
+              author: fromClient ? connection.user.email : "Atendente",
+              text: message.text,
+              date: message.created_at,
+              type: fromClient ? "admin_message_client" : "admin_message_admin",
+            });
+          });
+        },
+      );
+    },
+  );
+}
+
+function connectAdmin(token) {
+  socket?.disconnect();
+  socket = io("/admin", { auth: { token } });
+
+  socket.on("connect", () => {
+    setAuthenticated(true);
+    setStatus(pageStatus, "Conectado ao atendimento.");
+  });
+
+  socket.on("connect_error", (error) => {
+    setAuthenticated(false);
+    if (/token|autentica|atendente/i.test(error.message))
+      sessionStorage.removeItem("admin_token");
+    setStatus(
+      loginStatus,
+      "Sessão inválida ou indisponível. Entre novamente.",
+      true,
+    );
+  });
+
+  socket.on("chat_error", ({ error }) => setStatus(pageStatus, error, true));
+  socket.on("admin_list_all_users", renderConnections);
+
+  socket.on("admin_receive_message", ({ connection, message }) => {
+    const known = connectionsUsers.some(
+      (item) => item.user_id === connection.user_id,
+    );
+    if (!known) renderConnections([...connectionsUsers, connection]);
+    if (activeUserId !== connection.user_id) return;
+    const messageList = document.getElementById(
+      `allMessages${connection.user_id}`,
+    );
+    if (!messageList) return;
+    appendMessage(messageList, {
+      author: connection.user?.email ?? "Cliente",
+      text: message.text,
+      date: message.created_at,
+      type: "admin_message_client",
+    });
+  });
+
+  socket.on("admin_message_sent", ({ user_id, message }) => {
+    if (activeUserId !== user_id) return;
+    const messageList = document.getElementById(`allMessages${user_id}`);
+    if (!messageList) return;
+    appendMessage(messageList, {
+      author: "Atendente",
+      text: message.text,
+      date: message.created_at,
+      type: "admin_message_admin",
     });
   });
 }
 
-function sendMessage(id) {
-  const text = document.getElementById(`send_message_${id}`);
+loginForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const submit = loginForm.querySelector('button[type="submit"]');
+  submit.disabled = true;
+  setStatus(loginStatus, "Validando acesso…");
 
-  const params = {
-    text: text.value,
-    user_id: id,
-  };
+  try {
+    const response = await fetch("/admin/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: loginForm.elements.username.value,
+        password: loginForm.elements.password.value,
+      }),
+    });
+    const body = await response.json();
+    if (!response.ok) throw new Error(body.error ?? "Não foi possível entrar.");
 
-  socket.emit("admin_send_message", params);
-
-  const divMessages = document.getElementById(`allMessages${id}`);
-
-  const createDiv = document.createElement("div");
-  createDiv.className = "admin_message_admin";
-  createDiv.innerHTML = `Atendente: <span>${params.text}</span>`;
-  createDiv.innerHTML += `<span class="admin_date>${dayjs().format(
-    "DD/MM/YYYY HH:mm:ss"
-  )}`;
-
-  divMessages.appendChild(createDiv);
-
-  text.value = "";
-}
-
-socket.on("admin_receive_message", (data) => {
-  console.log(data);
-  const connection = connectionsUsers.find(
-    (connection) => (connection.socket_id = data.socket_id)
-  );
-
-  const divMessages = document.getElementById(
-    `allMessages${connection.user_id}`
-  );
-
-  const createDiv = document.createElement("div");
-
-  createDiv.className = "admin_message_client";
-  createDiv.innerHTML = `<span>${connection.user.email} </span>`;
-  createDiv.innerHTML += `<span>${data.message.text}</span>`;
-  createDiv.innerHTML += `<span class="admin_date">${dayjs(
-    data.message.created_at
-  ).format("DD/MM/YYYY HH:mm:ss")}</span>`;
-
-  divMessages.appendChild(createDiv);
+    sessionStorage.setItem("admin_token", body.token);
+    loginForm.reset();
+    connectAdmin(body.token);
+  } catch (error) {
+    setStatus(loginStatus, error.message || "Não foi possível entrar.", true);
+  } finally {
+    submit.disabled = false;
+  }
 });
+
+listUsers.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-user-id]");
+  if (!button || !socket?.connected) return;
+  const connection = connectionsUsers.find(
+    (item) => item.user_id === button.dataset.userId,
+  );
+  if (connection) openConversation(connection);
+});
+
+supports.addEventListener("submit", (event) => {
+  const form = event.target.closest('form[id^="send_form_"]');
+  if (!form) return;
+  event.preventDefault();
+  const input = form.elements.message;
+  const text = input.value.trim();
+  if (!text || !activeUserId || !socket?.connected) return;
+  socket.emit("admin_send_message", { user_id: activeUserId, text });
+  input.value = "";
+});
+
+document.querySelector("#admin_logout").addEventListener("click", () => {
+  sessionStorage.removeItem("admin_token");
+  socket?.disconnect();
+  setAuthenticated(false);
+  listUsers.replaceChildren();
+  supports.replaceChildren();
+  setStatus(loginStatus, "Sessão encerrada.");
+});
+
+const savedToken = sessionStorage.getItem("admin_token");
+if (savedToken) connectAdmin(savedToken);

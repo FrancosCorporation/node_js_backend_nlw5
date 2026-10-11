@@ -1,29 +1,30 @@
-import {Entity, Column, CreateDateColumn, UpdateDateColumn, PrimaryColumn} from "typeorm";
-import {v4 as uuid} from "uuid";
+import { randomUUID } from "node:crypto";
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  PrimaryColumn,
+  UpdateDateColumn,
+} from "typeorm";
 
 @Entity("settings")
-class Setting{
-    @PrimaryColumn()
-    id: string;
+export class Setting {
+  @PrimaryColumn({ type: "uuid" })
+  id!: string;
 
-    @Column()
-    username: string;
-    
-    @Column()
-    chat: boolean;
-    
-    @UpdateDateColumn()
-    updated_at: Date;
+  @Column({ type: "varchar" })
+  username!: string;
 
-    @CreateDateColumn()
-    created_at: Date;
+  @Column({ type: "boolean" })
+  chat!: boolean;
 
+  @UpdateDateColumn({ type: "datetime" })
+  updated_at!: Date;
 
-    constructor(){
-        if(!this.id){
-            this.id = uuid();
-        }
-    }
+  @CreateDateColumn({ type: "datetime" })
+  created_at!: Date;
 
+  constructor() {
+    this.id ??= randomUUID();
+  }
 }
-export {Setting}

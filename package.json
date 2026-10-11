@@ -1,24 +1,49 @@
 {
-  "devDependencies": {
-    "@types/express": "^4.17.11",
-    "@types/socket.io": "^2.1.13",
-    "@types/uuid": "^8.3.0",
-    "ts-node-dev": "^1.1.6",
-    "typescript": "^4.2.4"
+  "name": "node-js-backend-nlw5",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Chat de suporte com Express, Socket.IO, TypeORM e SQLite.",
+  "main": "dist/server.js",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.13.0 <25",
+    "npm": ">=9"
+  },
+  "allowScripts": {
+    "better-sqlite3@12.11.1": true,
+    "esbuild@0.28.2": true
   },
   "scripts": {
-    "dev": "ts-node-dev src/server.ts",
-    "typeorm": "ts-node-dev node_modules/typeorm/cli.js",
-    "start": "node src/server.ts"
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "dev": "tsx watch src/server.ts",
+    "lint": "eslint .",
+    "format": "prettier --write \"src/**/*.ts\" \"public/**/*.{html,css,js}\" scripts/*.mjs package.json tsconfig.json docker-compose.yml README.md"
   },
   "dependencies": {
-    "ejs": "^3.1.6",
-    "express": "^4.17.1",
-    "reflect-metadata": "^0.1.13",
-    "socket.io": "^4.0.1",
-    "socket.io-client": "^4.0.1",
-    "sqlite3": "^5.0.2",
-    "typeorm": "^0.2.32",
-    "uuid": "^8.3.2"
+    "better-sqlite3": "^12.11.1",
+    "dotenv": "^16.6.1",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.1",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "reflect-metadata": "^0.2.2",
+    "socket.io": "^4.8.4",
+    "typeorm": "^1.1.2",
+    "validator": "^13.15.35"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^24.19.2",
+    "@types/validator": "^13.15.10",
+    "eslint": "^10.12.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^16.5.0",
+    "prettier": "^3.9.10",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.1"
   }
 }

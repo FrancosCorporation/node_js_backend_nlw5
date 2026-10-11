@@ -1,14 +1,12 @@
-/node_modules
-node_modules
-
-# build
+node_modules/
 dist/
-build/
-
-# logs
+coverage/
+.env*
+!.env.example
+database/*.sqlite*
+src/DataBase/database.sqlite
 *.log
-
-# sistema / IDE
+*.tsbuildinfo
 .DS_Store
 Thumbs.db
 .idea/

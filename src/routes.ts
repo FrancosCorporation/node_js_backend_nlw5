@@ -1,34 +1,39 @@
 import { Router } from "express";
+import { rateLimit } from "express-rate-limit";
+import { AdminSessionsController } from "./Controllers/AdminSessionsController";
 import { MessagesController } from "./Controllers/MessagesController";
 import { SettingsController } from "./Controllers/SettingsController";
 import { UsersController } from "./Controllers/UsersControllers";
+import { AppConfig } from "./config";
+import { ensureAdmin } from "./middlewares/ensureAdmin";
 
+export function createRoutes(config: AppConfig): Router {
+  const routes = Router();
+  const adminSessionsController = new AdminSessionsController(config);
+  const messagesController = new MessagesController();
+  const settingsController = new SettingsController();
+  const usersController = new UsersController();
+  const adminOnly = ensureAdmin(config.jwtSecret, config.adminId);
+  const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 5,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+    message: {
+      error: "Muitas tentativas de login. Tente novamente em alguns minutos.",
+    },
+  });
 
-/**
- * Tipos de parametros
- * Routes Parms => Parametros de rotas
- * http://localhost:3333/settings/1
- * Query Params => Filtros e buscas
- * http://localhost:3333/settings/1?search=algumacoisa
- * 
- * Body params => {
- * json
- * }
- * 
- */
+  routes.post("/admin/session", loginLimiter, adminSessionsController.handle);
 
-const routes = Router();
-const settingsController = new SettingsController();
-const usersController = new UsersController();
-const messagesController = new MessagesController();
+  // The client only needs to know whether support is currently available.
+  routes.get("/settings/:username", settingsController.findByUsername);
 
-routes.post("/settings", settingsController.create);
-routes.get("/settings/:username", settingsController.findByUsername);
-routes.put("/settings/:username", settingsController.update);
+  routes.post("/settings", adminOnly, settingsController.create);
+  routes.put("/settings/:username", adminOnly, settingsController.update);
+  routes.post("/users", adminOnly, usersController.create);
+  routes.post("/messages", adminOnly, messagesController.create);
+  routes.get("/messages/:id", adminOnly, messagesController.showByUser);
 
-routes.post("/users", usersController.create);
-
-routes.post("/messages", messagesController.create);
-routes.get("/messages/:id", messagesController.showByUser)
-
-export { routes };
+  return routes;
+}

@@ -1,103 +1,98 @@
-# node_js_backend_nlw5
+# Chat de suporte · NLW 5
 
-## 🐳 Instalação e Execução (Docker) — recomendado
+Backend de atendimento em tempo real com Express, Socket.IO, TypeORM e SQLite. O projeto foi atualizado para uma execução local com credenciais administrativas geradas por instalação, conversas de cliente retomáveis por sessão e painel de atendente autenticado.
 
-### Pré-requisitos
-- [Docker](https://docs.docker.com/get-docker/) + Docker Compose
+## Requisitos
 
-### Rodar com Docker
-```bash
-docker compose up --build
-```
+- Node.js 24 e npm 9 ou mais recente;
+- Docker Engine com Compose v2, se preferir rodar em container.
 
+## Começar com Docker
 
-### Sem Docker (local)
-```bash
-npm install
-npm start
-```
-Servicos necessarios (local): sqlite
-
-
-**Projeto de estudo** — back-end de um chat de atendimento (suporte) construído com Node.js, TypeORM e Socket.IO durante a Next Level Week 5 da Rocketseat, trilha Node.js, em abril de 2021.
-
-![TypeScript](https://img.shields.io/badge/TypeScript-4-3178C6?style=flat&logo=typescript&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-Express-339933?style=flat&logo=node.js&logoColor=white)
-![Socket.IO](https://img.shields.io/badge/Socket.IO-4-010101?style=flat&logo=socket.io&logoColor=white)
-![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
-![Status](https://img.shields.io/badge/status-projeto%20de%20estudo-blue)
-
-## Sobre
-
-Exercício de estudo que implementa o back-end do chat da NLW 5: um cliente inicia a conversa informando o e-mail, escolhe um atendente disponível e troca mensagens em tempo real via WebSocket. Inclui configurações do atendente, cadastro de usuários, histórico de mensagens e duas interfaces HTML prontas (cliente e admin) servidas pela própria API.
-
-## Funcionalidades
-
-Comprovadas pelo código:
-
-- Rotas REST em `src/routes.ts`:
-  - `POST /settings`, `GET /settings/:username`, `PUT /settings/:username` — preferências do atendente (`src/Controllers/SettingsController.ts`);
-  - `POST /users` — cadastro por e-mail (`src/Controllers/UsersControllers.ts`);
-  - `POST /messages`, `GET /messages/:id` — envio e listagem de mensagens (`src/Controllers/MessagesController.ts`);
-- Interfaces `/client` e `/admin` renderizando os HTMLs de `public/` com EJS (`src/http.ts`);
-- WebSocket com Socket.IO (`src/webSocket/client.ts`, `src/webSocket/admin.ts`):
-  - cliente: `client_first_access`, `client_list_all_messages`, `client_send_to_admin`;
-  - admin: `admin_list_all_users`, `admin_list_messages_by_user`, `admin_send_message`, `admin_user_in_support`;
-- Persistência com TypeORM + SQLite e 4 migrations: `settings`, `users`, `messages`, `connections` (`src/DataBase/migrations/`);
-- Front-end estático do chat (HTML/CSS/JS + imagens) em `public/`.
-
-## Stack
-
-- **Node.js + Express 4** com **TypeScript**
-- **Socket.IO 4** (+ `socket.io-client`)
-- **TypeORM 0.2** + **SQLite** (`sqlite3`)
-- **EJS** para servir as páginas do chat
-- **uuid**, **reflect-metadata**, **ts-node-dev**
-
-## Como rodar
-
-Requer configuração de ambiente. O `ormconfig.json` aponta para `./src/database/...` (minúsculo), mas o código versionado está em `src/DataBase/` (maiúsculo) — em sistemas sensíveis a maiúsculas (Linux) ajuste os caminhos do `ormconfig.json` antes de rodar.
+O primeiro comando cria `.env` com segredo JWT, usuário e senha aleatórios e prepara o diretório privado do banco. Guarde as credenciais locais; o arquivo `.env` não deve ser enviado ao Git.
 
 ```bash
-yarn install
-yarn typeorm migration:run   # cria as tabelas no SQLite (após ajustar o caminho)
-yarn dev                     # sobe o servidor em http://localhost:3333
+make init
+make up
 ```
 
-Páginas prontas:
+Abra <http://localhost:3333/client> para o cliente e <http://localhost:3333/admin> para o painel. Para ver as credenciais geradas, consulte o arquivo `.env` local em um terminal privado. Para parar e remover o container:
 
-- Cliente: `http://localhost:3333/client`
-- Atendente: `http://localhost:3333/admin`
-
-O banco `src/DataBase/database.sqlite` está versionado com dados de teste do estudo.
-
-## Estrutura do projeto
-
-```
-.
-├── ormconfig.json
-└── src/
-│   ├── Controllers/       # Settings, Users, Messages
-│   ├── DataBase/          # conexão, migrations e SQLite
-│   ├── Repositories/      # repositórios TypeORM
-│   ├── Service/           # regras de negócio
-│   ├── entities/          # Setting, User, Message, Connection
-│   ├── webSocket/         # eventos client.ts / admin.ts
-│   ├── http.ts            # Express + Socket.IO + views
-│   ├── routes.ts
-│   └── server.ts
-└── public/
-    ├── html/              # client.html e admin.html
-    ├── css/               # styles.css
-    ├── js/                # chat.js e admin.js
-    └── images/            # ícones do chat
+```bash
+make down
 ```
 
-## Observações
+O SQLite fica em `database/chat.sqlite`, fora do histórico do Git. O volume mantém o banco após a remoção do container. O container usa usuário `node`, filesystem somente leitura e permissões Linux reduzidas.
 
-- As pastas misturam PascalCase e lowercase (`Controllers`, `Service`, `DataBase`) porque fazem parte do histórico do estudo; foram mantidas como estão.
-- Os arquivos HTML/CSS/JS do cliente são os originais do evento, com comentários em português.
+## Rodar localmente
+
+```bash
+make init
+npm ci
+npm run dev
+```
+
+O servidor usa `http://127.0.0.1:3333`. `npm run build` gera `dist/`; depois use `npm start`. O caminho do banco pode ser alterado por `DATABASE_PATH`.
+
+## Experiência do cliente
+
+O cliente informa o e-mail e a primeira mensagem. Cada navegador recebe um ID aleatório de sessão e um token assinado guardado no `localStorage`; a sessão pode ser retomada no mesmo navegador. O e-mail identifica a conversa para o atendente, mas não concede acesso a conversas antigas. Se o armazenamento do navegador for apagado, é necessário iniciar uma nova conversa. O banco legado é preservado e os históricos antigos continuam disponíveis no painel do atendente.
+
+## Autenticação e segurança
+
+- O painel `/admin` exige o usuário e a senha gerados em `.env`.
+- O namespace Socket.IO `/admin` e as rotas administrativas usam JWT com expiração; `/client` e `/admin` são namespaces separados.
+- Apenas a leitura de `GET /settings/:username` é pública para que a interface cliente verifique se o suporte está ativo.
+- Texto, e-mail e outros valores do cliente são inseridos no DOM como texto; a política CSP bloqueia scripts inline e conteúdo externo.
+- O sistema valida entradas, aplica limites para tentativas de login e eventos de chat, e limita requisições JSON a 32 KB.
+- Use HTTPS atrás de um proxy confiável ao publicar o serviço na internet. Faça backup regular do diretório `database/`.
+
+## Rotas REST
+
+| Rota                      | Acesso            | Descrição                                             |
+| ------------------------- | ----------------- | ----------------------------------------------------- |
+| `POST /admin/session`     | Público, limitado | Gera token de atendente com usuário e senha de `.env` |
+| `GET /settings/:username` | Público           | Informa se o chat está disponível                     |
+| `POST /settings`          | Atendente         | Cria configuração de chat                             |
+| `PUT /settings/:username` | Atendente         | Atualiza disponibilidade                              |
+| `POST /users`             | Atendente         | Cadastra usuário legado                               |
+| `POST /messages`          | Atendente         | Registra mensagem administrativa                      |
+| `GET /messages/:id`       | Atendente         | Lista histórico por ID de usuário                     |
+| `GET /health`             | Público           | Retorna estado do banco e do servidor                 |
+
+Envie rotas administrativas com `Authorization: Bearer <token>`. O token é obtido por `POST /admin/session` com JSON `{ "username": "...", "password": "..." }`.
+
+## Eventos Socket.IO
+
+- Cliente em `/client`: `client_first_access`, `client_resume`, `client_send_to_admin`, `client_list_all_messages`, `client_session`, `client_message_sent`, `admin_send_to_client`.
+- Atendente em `/admin`: `admin_list_all_users`, `admin_user_in_support`, `admin_list_messages_by_user`, `admin_send_message`, `admin_receive_message`.
+- A autenticação administrativa é enviada no handshake como `auth: { token }`. Mensagens são roteadas pelo servidor usando a sessão e a conversa associadas ao socket.
+
+## Configuração
+
+`make init` gera os valores secretos automaticamente. Variáveis suportadas:
+
+| Variável         | Padrão / regra          | Uso                                                              |
+| ---------------- | ----------------------- | ---------------------------------------------------------------- |
+| `HOST`           | `127.0.0.1`             | Endereço de escuta; Compose define `0.0.0.0` dentro do container |
+| `PORT`           | `3333`                  | Porta HTTP e Socket.IO                                           |
+| `JWT_SECRET`     | gerado; mínimo 32 bytes | Assinatura de sessões                                            |
+| `ADMIN_ID`       | UUID v4 gerado          | Identidade estável do atendente                                  |
+| `ADMIN_USERNAME` | gerado                  | Login do painel                                                  |
+| `ADMIN_PASSWORD` | gerado; mínimo 20 bytes | Senha do painel                                                  |
+| `DATABASE_PATH`  | `database/chat.sqlite`  | Arquivo SQLite                                                   |
+
+## Qualidade
+
+```bash
+npm run build
+npm run lint
+npm audit
+docker compose config
+```
+
+O workflow do GitHub Actions executa instalação limpa, build TypeScript e lint em `push` e pull request para `main`.
 
 ## Licença
 
-MIT — veja [LICENSE](LICENSE).
+MIT — consulte [LICENSE](LICENSE).

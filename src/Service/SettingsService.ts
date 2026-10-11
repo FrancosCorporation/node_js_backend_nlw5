@@ -1,49 +1,41 @@
-import { getCustomRepository, Repository } from "typeorm";
+import { Repository } from "typeorm";
+import { AppDataSource } from "../DataBase";
 import { Setting } from "../entities/Settings";
-import { SettingsRepository } from "../Repositories/SettingsRepository";
+import { ApiError } from "../errors/ApiError";
 
-interface ISettingsCreate {
-    chat: boolean;
-    username: string;
+interface SettingsInput {
+  chat: boolean;
+  username: string;
 }
 
-class SettingsService {
+export class SettingsService {
+  private readonly repository: Repository<Setting>;
 
-    private settingsRepository: Repository<Setting>;
-    
-    constructor(){
-        this.settingsRepository = getCustomRepository(SettingsRepository);
+  constructor() {
+    this.repository = AppDataSource.getRepository(Setting);
+  }
+
+  async create(input: SettingsInput): Promise<Setting> {
+    if (await this.findByUsername(input.username)) {
+      throw new ApiError(
+        409,
+        "Já existe uma configuração para esse atendente.",
+      );
     }
-    async create({ chat, username }: ISettingsCreate) {
-        // Select * from settings where username = username limit 1;
-        const userAlreadyExists = await this.settingsRepository.findOne({
-            username
-        });
-        if(userAlreadyExists){
-            throw new Error("User Already Exists !");
-        }
-        const settings = this.settingsRepository.create({
-            chat,
-            username
-        });
-        await this.settingsRepository.save(settings);
-        return settings;
+    return this.repository.save(this.repository.create(input));
+  }
+
+  async findByUsername(username: string): Promise<Setting | null> {
+    return this.repository.findOneBy({ username });
+  }
+
+  async update(username: string, chat: boolean): Promise<Setting> {
+    const result = await this.repository.update({ username }, { chat });
+    if (!result.affected) {
+      throw new ApiError(404, "Configuração não encontrada.");
     }
-    async findByUsername(username: string){
-        const settings = await this.settingsRepository.findOne({
-            username
-        });
-        return settings;
-    }
-    async update(username: string, chat: boolean){
-        await this.settingsRepository
-        .createQueryBuilder()
-        .update(Setting)
-        .set({chat})
-        .where("username = :username",{
-            username
-        }).execute();
-    }
+    const setting = await this.findByUsername(username);
+    if (!setting) throw new ApiError(404, "Configuração não encontrada.");
+    return setting;
+  }
 }
-
-export { SettingsService }

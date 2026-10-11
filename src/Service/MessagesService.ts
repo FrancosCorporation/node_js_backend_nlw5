@@ -1,38 +1,28 @@
-import { getCustomRepository, Repository } from "typeorm";
+import { Repository } from "typeorm";
+import { AppDataSource } from "../DataBase";
 import { Message } from "../entities/Message";
-import { MessagesRepository } from "../Repositories/MessagesRepository";
 
-interface IMessageCreate {
-    admin_id?: string;
-    text: string;
-    user_id: string;
+interface MessageInput {
+  admin_id: string | null;
+  text: string;
+  user_id: string;
 }
 
-class MessagesService {
-    private messagesRepository: Repository<Message>;
+export class MessagesService {
+  private readonly repository: Repository<Message>;
 
-    constructor() {
-        this.messagesRepository = getCustomRepository(MessagesRepository);
-    }
+  constructor() {
+    this.repository = AppDataSource.getRepository(Message);
+  }
 
-    async create({ admin_id, text, user_id }: IMessageCreate) {
+  async create(input: MessageInput): Promise<Message> {
+    return this.repository.save(this.repository.create(input));
+  }
 
-        const message = this.messagesRepository.create(
-            {
-                admin_id,
-                text,
-                user_id
-            }
-        );
-        await this.messagesRepository.save(message);
-        return message;
-    }
-    async listByUser(user_id: string) {
-        const list = await this.messagesRepository.find({
-            where: { user_id },
-            relations: ["user"]
-        });
-        return list;
-    }
+  async listByUser(userId: string): Promise<Message[]> {
+    return this.repository.find({
+      where: { user_id: userId },
+      order: { created_at: "ASC" },
+    });
+  }
 }
-export { MessagesService }
