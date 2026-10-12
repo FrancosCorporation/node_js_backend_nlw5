@@ -177,6 +177,17 @@ function connectAdmin(token) {
     );
   });
 
+  socket.on("disconnect", (reason) => {
+    if (reason !== "io server disconnect") return;
+    sessionStorage.removeItem("admin_token");
+    activeUserId = null;
+    connectionsUsers = [];
+    listUsers.replaceChildren();
+    supports.replaceChildren();
+    setAuthenticated(false);
+    setStatus(loginStatus, "Sua sessão expirou. Entre novamente.", true);
+  });
+
   socket.on("chat_error", ({ error }) => setStatus(pageStatus, error, true));
   socket.on("admin_list_all_users", renderConnections);
 

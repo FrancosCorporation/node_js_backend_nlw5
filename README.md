@@ -4,7 +4,7 @@ Backend de atendimento em tempo real com Express, Socket.IO, TypeORM e SQLite. O
 
 ## Requisitos
 
-- Node.js 24 e npm 9 ou mais recente;
+- Node.js 22.13 ou mais recente na linha 22, ou Node.js 24.11 ou mais recente na linha 24; npm 9 ou mais recente;
 - Docker Engine com Compose v2, se preferir rodar em container.
 
 ## Começar com Docker
@@ -22,7 +22,7 @@ Abra <http://localhost:3333/client> para o cliente e <http://localhost:3333/admi
 make down
 ```
 
-O SQLite fica em `database/chat.sqlite`, fora do histórico do Git. O volume mantém o banco após a remoção do container. O container usa usuário `node`, filesystem somente leitura e permissões Linux reduzidas.
+O SQLite fica em `database/chat.sqlite`, fora do histórico do Git. O volume mantém o banco após a remoção do container. O container usa usuário `node`, filesystem somente leitura e permissões Linux reduzidas. A porta do host é vinculada a `127.0.0.1`; coloque o proxy HTTPS no mesmo host se precisar publicar o chat.
 
 ## Rodar localmente
 
@@ -41,7 +41,7 @@ O cliente informa o e-mail e a primeira mensagem. Cada navegador recebe um ID al
 ## Autenticação e segurança
 
 - O painel `/admin` exige o usuário e a senha gerados em `.env`.
-- O namespace Socket.IO `/admin` e as rotas administrativas usam JWT com expiração; `/client` e `/admin` são namespaces separados.
+- O namespace Socket.IO `/admin` e as rotas administrativas usam JWT com expiração; os sockets são desconectados quando o token expira. `/client` e `/admin` são namespaces separados.
 - Apenas a leitura de `GET /settings/:username` é pública para que a interface cliente verifique se o suporte está ativo.
 - Texto, e-mail e outros valores do cliente são inseridos no DOM como texto; a política CSP bloqueia scripts inline e conteúdo externo.
 - O sistema valida entradas, aplica limites para tentativas de login e eventos de chat, e limita requisições JSON a 32 KB.
@@ -91,7 +91,7 @@ npm audit
 docker compose config
 ```
 
-O workflow do GitHub Actions executa instalação limpa, build TypeScript e lint em `push` e pull request para `main`.
+O workflow do GitHub Actions executa instalação limpa, audit de dependências, build TypeScript e lint em Node 22/24 em `push` e pull request para `main`.
 
 ## Licença
 

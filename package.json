@@ -6,7 +6,7 @@
   "main": "dist/server.js",
   "license": "MIT",
   "engines": {
-    "node": ">=22.13.0 <25",
+    "node": "^22.13.0 || >=24.11.0 <25",
     "npm": ">=9"
   },
   "allowScripts": {

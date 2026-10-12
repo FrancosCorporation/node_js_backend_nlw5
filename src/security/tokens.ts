@@ -1,6 +1,10 @@
 import jwt, { type JwtPayload } from "jsonwebtoken";
 
 export type TokenRole = "admin" | "client";
+export interface VerifiedToken {
+  subject: string;
+  expiresAt: number;
+}
 
 const TOKEN_ISSUER = "node-js-backend-nlw5";
 const TOKEN_AUDIENCE = "node-js-backend-nlw5-chat";
@@ -19,19 +23,31 @@ export function createToken(
   });
 }
 
-export function verifyToken(
+export function verifyTokenSession(
   token: string,
   secret: string,
   role: TokenRole,
-): string {
+): VerifiedToken {
   const payload = jwt.verify(token, secret, {
     algorithms: ["HS256"],
     audience: TOKEN_AUDIENCE,
     issuer: TOKEN_ISSUER,
   }) as JwtPayload & { role?: unknown };
 
-  if (payload.role !== role || typeof payload.sub !== "string") {
+  if (
+    payload.role !== role ||
+    typeof payload.sub !== "string" ||
+    typeof payload.exp !== "number"
+  ) {
     throw new Error("Token inválido.");
   }
-  return payload.sub;
+  return { subject: payload.sub, expiresAt: payload.exp };
+}
+
+export function verifyToken(
+  token: string,
+  secret: string,
+  role: TokenRole,
+): string {
+  return verifyTokenSession(token, secret, role).subject;
 }

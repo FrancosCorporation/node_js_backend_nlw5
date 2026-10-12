@@ -97,6 +97,16 @@ function connectClient(token, firstAccess) {
     }
   });
 
+  socket.on("disconnect", (reason) => {
+    if (reason !== "io server disconnect") return;
+    localStorage.removeItem(sessionStorageKey);
+    sessionEmail = "";
+    messages.replaceChildren();
+    showStartForm();
+    supportButton.hidden = false;
+    setStatus("Sua sessão expirou. Inicie uma nova conversa.", true, true);
+  });
+
   socket.on("client_session", (session) => {
     localStorage.setItem(sessionStorageKey, session.token);
     sessionEmail = session.email;

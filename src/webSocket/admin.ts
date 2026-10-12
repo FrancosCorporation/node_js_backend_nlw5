@@ -2,8 +2,9 @@ import { isUUID } from "validator";
 import { config, io } from "../http";
 import { ConnectionService } from "../Service/ConnectionsService";
 import { MessagesService } from "../Service/MessagesService";
+import { disconnectSocketAtExpiry } from "../security/disconnectSocketAtExpiry";
 import { allowSocketEvent } from "../security/socketRateLimit";
-import { verifyToken } from "../security/tokens";
+import { verifyTokenSession } from "../security/tokens";
 
 interface UserPayload {
   user_id?: unknown;
@@ -21,10 +22,11 @@ adminNamespace.use((socket, next) => {
     return next(new Error("Autenticação de atendente necessária."));
 
   try {
-    const adminId = verifyToken(token, config.jwtSecret, "admin");
-    if (adminId !== config.adminId)
+    const session = verifyTokenSession(token, config.jwtSecret, "admin");
+    if (session.subject !== config.adminId)
       return next(new Error("Atendente inválido."));
-    socket.data.adminId = adminId;
+    socket.data.adminId = session.subject;
+    socket.data.tokenExpiresAt = session.expiresAt;
     return next();
   } catch {
     return next(new Error("Token de atendente inválido ou expirado."));
@@ -37,6 +39,11 @@ adminNamespace.on("connection", (socket) => {
     socket.disconnect(true);
     return;
   }
+  if (typeof socket.data.tokenExpiresAt !== "number") {
+    socket.disconnect(true);
+    return;
+  }
+  disconnectSocketAtExpiry(socket, socket.data.tokenExpiresAt);
 
   const connectionsService = new ConnectionService();
   const messagesService = new MessagesService();

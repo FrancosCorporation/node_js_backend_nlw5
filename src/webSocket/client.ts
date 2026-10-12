@@ -4,8 +4,12 @@ import { config, io } from "../http";
 import { ConnectionService } from "../Service/ConnectionsService";
 import { MessagesService } from "../Service/MessagesService";
 import { UsersService } from "../Service/UsersService";
+import { disconnectSocketAtExpiry } from "../security/disconnectSocketAtExpiry";
 import { allowSocketEvent } from "../security/socketRateLimit";
-import { createToken, verifyToken } from "../security/tokens";
+import {
+  createToken,
+  verifyTokenSession,
+} from "../security/tokens";
 
 interface FirstAccessPayload {
   email?: unknown;
@@ -25,7 +29,9 @@ clientNamespace.use((socket, next) => {
   if (typeof token !== "string") return next(new Error("Sessão inválida."));
 
   try {
-    socket.data.userId = verifyToken(token, config.jwtSecret, "client");
+    const session = verifyTokenSession(token, config.jwtSecret, "client");
+    socket.data.userId = session.subject;
+    socket.data.tokenExpiresAt = session.expiresAt;
     return next();
   } catch {
     return next(new Error("Sessão inválida ou expirada."));
@@ -40,6 +46,19 @@ clientNamespace.on("connection", (socket) => {
   const connectionsService = new ConnectionService();
   const usersService = new UsersService();
   const messagesService = new MessagesService();
+
+  if (typeof socket.data.tokenExpiresAt === "number") {
+    disconnectSocketAtExpiry(socket, socket.data.tokenExpiresAt);
+  }
+
+  const issueClientSession = (user: { id: string; email: string }): void => {
+    const token = createToken("client", user.id, config.jwtSecret);
+    const session = verifyTokenSession(token, config.jwtSecret, "client");
+    socket.data.userId = user.id;
+    socket.data.tokenExpiresAt = session.expiresAt;
+    disconnectSocketAtExpiry(socket, session.expiresAt);
+    socket.emit("client_session", { token, email: user.email });
+  };
 
   const resumeSession = async (): Promise<void> => {
     const userId = socket.data.userId;
@@ -59,10 +78,7 @@ clientNamespace.on("connection", (socket) => {
     }
 
     await connectionsService.connectUser(socket.id, userId);
-    socket.emit("client_session", {
-      token: createToken("client", userId, config.jwtSecret),
-      email: user.email,
-    });
+    issueClientSession(user);
     socket.emit(
       "client_list_all_messages",
       await messagesService.listByUser(userId),
@@ -117,7 +133,6 @@ clientNamespace.on("connection", (socket) => {
         // A new browser session always receives a new user ID. Email alone never
         // selects an existing account or grants access to its conversation.
         const user = await usersService.create(email);
-        socket.data.userId = user.id;
         await connectionsService.connectUser(socket.id, user.id);
         await messagesService.create({
           admin_id: null,
@@ -125,8 +140,7 @@ clientNamespace.on("connection", (socket) => {
           user_id: user.id,
         });
 
-        const token = createToken("client", user.id, config.jwtSecret);
-        socket.emit("client_session", { token, email: user.email });
+        issueClientSession(user);
         socket.emit(
           "client_list_all_messages",
           await messagesService.listByUser(user.id),

@@ -10,7 +10,7 @@ services:
       PORT: ${PORT:-3333}
       DATABASE_PATH: /app/database/chat.sqlite
     ports:
-      - "${PORT:-3333}:${PORT:-3333}"
+      - "127.0.0.1:${PORT:-3333}:${PORT:-3333}"
     volumes:
       - ./database:/app/database
     read_only: true
