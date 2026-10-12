@@ -4,11 +4,11 @@
 ## Estado da execução · 2026-10-12
 
 - [x] **SEC-01, SEC-02, SEC-03, SEC-04:** namespaces separados, sessão administrativa JWT, sessão de cliente assinada por navegador, validação de dados, rotas administrativas protegidas e renderização segura com `textContent`.
-- [x] **SEC-05:** sockets administrativos e de cliente são encerrados no instante da expiração JWT; o cliente limpa a sessão local e solicita novo login/conversa.
+- [x] **SEC-05:** sockets administrativos e de cliente são desconectados quando o JWT expira; o cliente limpa a sessão local e solicita novo login/conversa.
 - [x] **BUG-01, BUG-02, BUG-03:** configuração TypeORM com caminhos portáveis, banco de teste removido do Git e preservado localmente, identidade administrativa estável e interface corrigida.
 - [ ] **TEST-01:** testes automatizados não foram adicionados nem executados nesta tarefa; build, lint, auditoria de dependências e validações de configuração foram usados.
-- [ ] **DEVOPS-01:** workflow de CI valida `npm ci`, build e lint em `main`; falta o passo `npm test`, bloqueado junto com TEST-01.
-- [x] **DEVOPS-03:** CI estática ampliada a Node 22/24, audit de dependências e validação Compose; runner fixo e actions atuais. A faixa do Node agora coincide com o requisito de TypeORM 1.1.2. Sem testes ou serviços.
+- [ ] **DEVOPS-01:** CI executa instalação limpa, audit, build, lint e Compose na matriz Node 22/24; passo `npm test` permanece pendente, sem teste adicionado ou executado.
+- [x] **DEVOPS-03:** CI estática `38198151755` passou em Node 22/24 com audit, build, lint e validação Compose; runner Ubuntu 24.04 e actions v7. A faixa do Node coincide com o requisito de TypeORM 1.1.2. Sem testes ou serviços.
 - [x] **DEVOPS-02, DOC-01:** imagem multi-stage não-root com `PORT` e healthcheck; porta Compose vinculada a `127.0.0.1`; instruções de configuração/segurança atualizadas.
 
 ## 0. Como usar este documento
